@@ -1,0 +1,193 @@
+================================================================
+  Signed BCD to Signed Binary Converter — Structural Verilog
+================================================================
+
+Course  : EE360 Digital Design I
+Team    : Team 2
+Members : Saleh Abdullah Alharthi & Mustafa Abdelrahman Mohamed
+Year    : Spring 2026
+
+----------------------------------------------------------------
+PROJECT OVERVIEW
+----------------------------------------------------------------
+
+This project implements a combinational digital circuit that
+converts a 12-bit signed-magnitude BCD (Binary-Coded Decimal)
+number into its equivalent signed binary representation using
+2's complement for negative values.
+
+The entire design is implemented using structural Verilog
+(gate-level), with no behavioral HDL constructs and without
+using the reverse double dabble algorithm.
+
+----------------------------------------------------------------
+INPUTS & OUTPUTS
+----------------------------------------------------------------
+
+Inputs:
+  - bcd_in [11:0] : 12-bit BCD input (3 decimal digits, 000-999)
+  - sign          : 1-bit sign flag
+                    (0 = positive, 1 = negative)
+
+Outputs:
+  - binary_out [10:0] : 11-bit signed binary output
+                        (2's complement for negative values)
+
+----------------------------------------------------------------
+HOW IT WORKS
+----------------------------------------------------------------
+
+  1. The 12-bit BCD input is split into three 4-bit groups:
+       - Hundreds : bcd_in[11:8]
+       - Tens     : bcd_in[7:4]
+       - Units    : bcd_in[3:0]
+
+  2. Each group is multiplied by its decimal weight:
+       - Hundreds x 100 (HundredMultiplier)
+       - Tens     x 10  (tensmultiplier)
+       - Units    x 1   (passed directly)
+
+  3. Results are summed using ripple carry adders:
+       - 7-bit adder  : adds (Tens x 10) + Units
+       - 10-bit adder : adds (Hundreds x 100) + previous result
+
+  4. The final binary value passes through a Multiplexer:
+       - If sign = 0 : positive binary output
+       - If sign = 1 : 2's complement output (negative)
+
+----------------------------------------------------------------
+PROJECT MODULES
+----------------------------------------------------------------
+
+  Module 1  : halfadder.v
+              Basic 2-input adder (XOR + AND gates)
+
+  Module 2  : fulladder.v
+              3-input adder built from 2 half adders
+
+  Module 3  : tensmultiplier.v
+              Multiplies 4-bit input by 10
+              Uses 1 Full Adder + 3 Half Adders
+
+  Module 4  : HundredMultiplier.v
+              Multiplies 4-bit input by 100
+              Uses 3 Full Adders + 2 Half Adders
+
+  Module 5  : adder_7bit.v
+              7-bit ripple carry adder
+              (max output: 90 + 9 = 99, fits in 7 bits)
+
+  Module 6  : adder_10bit.v
+              10-bit ripple carry adder
+              (max output: 900 + 99 = 999, fits in 10 bits)
+
+  Module 7  : oneBitComp.v
+              1-bit complement building block
+              (XOR + OR gates)
+
+  Module 8  : twosComp.v
+              10-bit 2's complement converter
+              (chain of 10 oneBitComp modules)
+
+  Module 9  : MUX.v
+              Output multiplexer
+              (selects positive or negative result based on S)
+
+  Module 10 : BCD2Binary.v
+              Top-level module connecting all modules together
+
+----------------------------------------------------------------
+DESIGN APPROACH
+----------------------------------------------------------------
+
+  - Language    : Verilog HDL (Structural only)
+  - Simulation  : EDA Playground (Icarus Verilog 12.0)
+  - Synthesis   : Intel Quartus Prime Lite Edition 25.1
+  - No behavioral constructs used (no always/assign blocks)
+  - No reverse double dabble algorithm used
+  - All logic built from basic gate primitives only
+
+----------------------------------------------------------------
+DESIGN ALTERNATIVE
+----------------------------------------------------------------
+
+  Two alternatives were considered for the multiplier modules:
+
+  Alternative 1 (SELECTED):
+    Dedicated multiplier using Half and Full Adders
+    - 10x : 1 FA + 3 HA  (minimal hardware)
+    - 100x: 3 FA + 2 HA  (minimal hardware)
+    - Lower gate count, simpler circuit
+
+  Alternative 2 (NOT SELECTED):
+    Shift-and-Add multiplier
+    - 10x : requires a 7-bit adder
+    - 100x: requires a 10-bit adder
+    - More hardware overhead, higher complexity
+
+  Alternative 1 was selected for its superior efficiency
+  and lower hardware resource usage.
+
+----------------------------------------------------------------
+FILE STRUCTURE
+----------------------------------------------------------------
+
+  /src
+    halfadder.v
+    fulladder.v
+    tensmultiplier.v
+    HundredMultiplier.v
+    adder_7bit.v
+    adder_10bit.v
+    oneBitComp.v
+    twosComp.v
+    MUX.v
+    BCD2Binary.v
+
+  /testbench
+    tb_halfadder.v
+    tb_fulladder.v
+    tb_tensmultiplier.v
+    tb_HundredMultiplier.v
+    tb_adder_7bit.v
+    tb_adder_10bit.v
+    tb_oneBitComp.v
+    tb_twosComp.v
+    tb_MUX.v
+    tb_BCD2Binary.v
+
+  /report
+    EE360_Project_Report.pdf
+
+  /simulation
+    waveform screenshots for each module
+
+  info.txt
+    this file
+
+----------------------------------------------------------------
+TESTED CASES
+----------------------------------------------------------------
+
+  BCD Input   Sign   Expected Binary Output
+  ---------   ----   ----------------------
+  226         +      00011100010
+  226         -      11100011110
+  999         +      01111100111
+  999         -      10000011001
+  000         +      00000000000
+  001         +      00000000001
+  001         -      11111111111
+  500         +      00111110100
+
+----------------------------------------------------------------
+NOTES
+----------------------------------------------------------------
+
+  - Maximum BCD input  : 999
+  - Minimum BCD input  : 000
+  - Output range       : -999 to +999
+  - No overflow occurs since 999 fits within 10 bits
+  - The MSB of binary_out is always the sign bit S
+
+================================================================
